@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <header class="sidebar-header">
+                <img src="images/icon48.png" alt="Logo" class="logo">
+                <h1>Gestor Pro</h1>
+                
+                <button id="resetButton" title="Limpa todos os dados para analisar um novo perfil">
+                    <i class="fa-solid fa-power-off"></i> Limpar Resultados
+                </button>
+
+            </header>
+            <nav>
+                <button class="tab-link active" data-tab="nao-seguidores-tab">
+                    <i class="fa-solid fa-users-slash"></i>
+                    <span>Não Seguidores</span>
+                    <span id="nao-seguidores-count" class="badge">0</span>
+                </button>
+                <button class="tab-link" data-tab="favoritos-tab">
+                    <i class="fa-solid fa-star"></i>
+                    <span>Favoritos</span>
+                    <span id="favoritos-count" class="badge">0</span>
+                </button>
+                <button class="tab-link" data-tab="nao-sigo-tab">
+                    <i class="fa-solid fa-user-check"></i>
+                    <span>Não Sigo Mais</span>
+                    <span id="nao-sigo-count" class="badge">0</span>
+                </button>
+            </nav>
+            <footer class="sidebar-footer">
+                <div id="status-container">
+                    <div id="status-indicator" class="idle"></div>
+                    <span id="status-message">Pronto</span>
+                </div>
+
+                <div id="sidebar-progress-view" style="display: none;">
+                    <p id="progress-stage"></p>
+                    <div class="progress-bar-container">
+                        <div id="progress-bar"></div>
+                    </div>
+                    <div class="progress-details">
+                        <span id="progress-counter">0/0</span>
+                        <span id="progress-percentage">0%</span>
+                        <span id="progress-timer">~</span>
+                    </div>
+                </div>
+            </footer>
+        </aside>
+        <main class="content">
+            <header class="main-header">
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchInput" placeholder="Pesquisar usuários...">
+                </div>
+                <div class="main-actions">
+                    <button id="scanButton">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        Analisar Perfil
+                    </button>
+                    <button id="cancel-action-button" class="cancel-btn" style="display: none;">
+                        <i class="fa-solid fa-ban"></i> Cancelar
+                    </button>
+                </div>
+            </header>
+            <div class="tab-content active" id="nao-seguidores-tab">
+                <div class="tab-header">
+                    <h2>Contas que não te seguem de volta</h2>
+                    <button id="unfollowAllButton" class="unfollow-btn-all"
+                        title="Deixar de seguir todos os não-favoritos da lista">
+                        <i class="fa-solid fa-users-slash"></i> Deixar de seguir todos
+                    </button>
+                </div>
+                <ul id="nao-seguidores-list" class="user-list">
+                </ul>
+            </div>
+            <div class="tab-content" id="favoritos-tab">
+                <div class="tab-header">
+                    <h2>Contas favoritadas (protegidas)</h2>
+                </div>
+                <ul id="favoritos-list" class="user-list"></ul>
+            </div>
+            <div class="tab-content" id="nao-sigo-tab">
+                <div class="tab-header">
+                    <h2>Contas que você deixou de seguir</h2>
+                </div>
+                <ul id="nao-sigo-list" class="user-list"></ul>
+            </div>
+        </main>
+    </div>
+    <script src="index.js"></script>
+</body>
+
+</html>
