@@ -7,12 +7,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const unfollowAllButton = document.getElementById('unfollowAllButton');
     const searchInput = document.getElementById('searchInput');
     const cancelButton = document.getElementById('cancel-action-button');
-
+    
     // Elementos de Status e Progresso no Rodapé
     const statusContainer = document.getElementById('status-container');
     const statusMessage = document.getElementById('status-message');
     const statusIndicator = document.getElementById('status-indicator');
-
+    
     const sidebarProgressView = document.getElementById('sidebar-progress-view');
     const progressBar = document.getElementById('progress-bar');
     const progressCounter = document.getElementById('progress-counter');
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
         favoritos: document.getElementById('favoritos-count'),
         naoSigo: document.getElementById('nao-sigo-count'),
     };
-
+    
     // --- 2. ESTADO DA APLICAÇÃO ---
     let state = {
         naoSeguidores: [],
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         naoSigo: [],
         currentFilter: '',
     };
-
+    
     let isUnfollowing = false;
     let wasCancelled = false;
 
@@ -77,7 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- 4. RENDERIZAÇÃO ---
-    // ... (Função createUserItemHTML, renderList e renderAllLists não mudam)
     const createUserItemHTML = (user, listType) => {
         const isFavorited = state.favoritos.some(fav => fav.id === user.id);
         let actionsHTML = '';
@@ -92,13 +91,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
             `;
         } else if (listType === 'favoritos') {
-            actionsHTML = `
+             actionsHTML = `
                 <button class="action-btn star-btn favorited" data-userid="${user.id}" title="Remover dos Favoritos">
                     <i class="fa-solid fa-star"></i>
                 </button>
             `;
         }
-
+        
         return `
             <li class="user-item" id="user-${user.id}">
                 <img src="${user.picUrl || 'images/icon48.png'}" alt="Foto de ${user.username}" crossOrigin="anonymous">
@@ -110,19 +109,19 @@ document.addEventListener('DOMContentLoaded', () => {
             </li>
         `;
     };
-
+    
     const renderList = (listName) => {
         const listElement = lists[listName];
         const countElement = counts[listName];
         const users = state[listName] || [];
-        const filteredUsers = users.filter(user =>
-            user.username.toLowerCase().includes(state.currentFilter) ||
+        const filteredUsers = users.filter(user => 
+            user.username.toLowerCase().includes(state.currentFilter) || 
             (user.fullName && user.fullName.toLowerCase().includes(state.currentFilter))
         );
         listElement.innerHTML = filteredUsers.map(user => createUserItemHTML(user, listName)).join('');
         countElement.textContent = users.length;
     };
-
+    
     const renderAllLists = () => {
         renderList('naoSeguidores');
         renderList('favoritos');
@@ -142,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     scanButton.addEventListener('click', async () => {
         wasCancelled = false;
-        setInProgressView(true); // Mostra a barra de progresso no rodapé
+        setInProgressView(true);
         updateStatus('Iniciando análise...', 'loading');
         try {
             const response = await chrome.runtime.sendMessage({ action: 'startScan' });
@@ -152,19 +151,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 throw new Error(response.message || 'Falha ao obter dados.');
             }
-
+            
             progressStage.textContent = 'Finalizando e comparando listas...';
             const { following, followers } = response.data;
-
+            
             const followersIds = new Set(followers.map(u => u.id));
             state.naoSeguidores = following.filter(u => !followersIds.has(u.id));
-
+            
             state.favoritos = state.favoritos.filter(fav => !followersIds.has(fav.id));
 
             await saveState();
             renderAllLists();
             updateStatus(`Análise concluída: ${state.naoSeguidores.length} não seguidores encontrados.`, 'success');
-
+            
         } catch (error) {
             if (error.message === 'cancelled') {
                 updateStatus('Análise cancelada.', 'idle');
@@ -173,12 +172,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (error.message.includes("ID de usuário") || error.message.includes("perfil")) {
                     friendlyMessage = "ID/Perfil não encontrado. Se você trocou de conta, recarregue a página (F5) e tente novamente.";
                 } else if (error.message.includes("429")) {
-                    friendlyMessage = "Muitas requisições. O Instagram pediu uma pausa. Tente novamente em alguns minutos.";
+                     friendlyMessage = "Muitas requisições. O Instagram pediu uma pausa. Tente novamente em alguns minutos.";
                 }
                 updateStatus(friendlyMessage, 'error');
             }
         } finally {
-            setInProgressView(false); // Esconde a barra de progresso e mostra o status
+            setInProgressView(false);
         }
     });
 
@@ -211,23 +210,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     unfollowAllButton.addEventListener('click', async () => {
-        const unfollowLimit = 200;
         const totalNaoSeguidores = state.naoSeguidores.length;
-
         if (totalNaoSeguidores === 0) return;
 
-        const qtdParaUnfollow = Math.min(totalNaoSeguidores, unfollowLimit);
-        const confirmationMessage = `Você tem ${totalNaoSeguidores} não-seguidores.\n\nPor segurança, a ferramenta deixará de seguir no máximo ${unfollowLimit} contas por vez.\n\nDeseja deixar de seguir ${qtdParaUnfollow} contas agora?`;
+        const recommendedLimit = 200;
+        const defaultValue = Math.min(totalNaoSeguidores, recommendedLimit);
 
-        if (!confirm(confirmationMessage)) return;
+        const promptMessage = `Quantas contas você deseja deixar de seguir?\n\nTotal de não-seguidores: ${totalNaoSeguidores}\n\n⚠️ Por segurança, o recomendado é no máximo ${recommendedLimit} por vez.`;
+        
+        const userInput = prompt(promptMessage, defaultValue);
+
+        if (userInput === null) {
+            return; 
+        }
+
+        const qtdParaUnfollow = parseInt(userInput, 10);
+
+        if (isNaN(qtdParaUnfollow) || qtdParaUnfollow <= 0) {
+            alert("Por favor, insira um número válido e maior que zero.");
+            return;
+        }
+        
+        const finalQtdParaUnfollow = Math.min(qtdParaUnfollow, totalNaoSeguidores);
 
         isUnfollowing = true;
         wasCancelled = false;
         scanButton.disabled = true;
         renderAllLists();
-        setInProgressView(true); // Mostra a barra de progresso no rodapé
+        setInProgressView(true);
 
-        const usersToUnfollow = state.naoSeguidores.slice(0, qtdParaUnfollow);
+        const usersToUnfollow = state.naoSeguidores.slice(0, finalQtdParaUnfollow);
         let totalToUnfollowInBatch = usersToUnfollow.length;
 
         for (let i = 0; i < usersToUnfollow.length; i++) {
@@ -238,6 +250,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const user = usersToUnfollow[i];
 
+            // VERIFICAÇÃO 2: Checa se o usuário foi favoritado durante o processo
+            if (state.favoritos.some(fav => fav.id === user.id)) {
+                progressStage.textContent = `Pulando ${user.username} (favoritado)...`;
+                await delay(1500); // Pequena pausa para o usuário ver a mensagem
+                continue; // Pula para o próximo usuário no loop
+            }
+            
             progressStage.textContent = `Deixando de seguir ${user.username}...`;
             progressCounter.textContent = `${i + 1}/${totalToUnfollowInBatch}`;
             const percentage = Math.round(((i + 1) / totalToUnfollowInBatch) * 100);
@@ -257,13 +276,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStatus(error.message, 'error');
                 await delay(2000);
             }
-
+            
             await saveState();
             renderAllLists();
-
+            
             if (i < usersToUnfollow.length - 1) {
-                const randomDelay = Math.random() * 5000 + 10000;
-                let secondsLeft = Math.round(randomDelay / 1000);
+                const fixedDelay = 10000;
+                let secondsLeft = Math.round(fixedDelay / 1000);
 
                 for (let s = secondsLeft; s > 0; s--) {
                     if (wasCancelled) break;
@@ -276,30 +295,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         isUnfollowing = false;
         scanButton.disabled = false;
-        setInProgressView(false); // Esconde a barra de progresso
-
+        setInProgressView(false);
+        
         const totalRestante = state.naoSeguidores.length;
         if (wasCancelled) {
-            // a mensagem de cancelamento já foi dada no loop
+             // a mensagem de cancelamento já foi dada no loop
         } else if (totalRestante > 0) {
-            updateStatus(`Lote de ${qtdParaUnfollow} concluído. Clique novamente para processar os ${totalRestante} restantes.`, 'success');
+            updateStatus(`Lote de ${finalQtdParaUnfollow} concluído. Clique novamente para processar os ${totalRestante} restantes.`, 'success');
         } else {
             updateStatus("Processo concluído. Você não tem mais não-seguidores.", 'success');
         }
-
+        
         renderAllLists();
     });
 
     document.querySelector('.content').addEventListener('click', async (e) => {
-        if (isUnfollowing) return;
+        // VERIFICAÇÃO 1: O bloqueio mestre foi removido daqui
         const target = e.target.closest('.action-btn');
         if (!target) return;
 
         const userId = target.dataset.userid;
-
+        
         if (target.classList.contains('star-btn')) {
             const isFavorited = state.favoritos.some(fav => fav.id === userId);
-
+            
             if (isFavorited) {
                 const userToMove = state.favoritos.find(u => u.id === userId);
                 state.favoritos = state.favoritos.filter(u => u.id !== userId);
@@ -311,9 +330,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         else if (target.classList.contains('unfollow-btn')) {
+            // VERIFICAÇÃO 1 (continuação): Bloqueio específico para unfollow individual
+            if (isUnfollowing) {
+                alert("Aguarde o processo automático terminar para usar o unfollow individual.");
+                return;
+            }
+
             const user = state.naoSeguidores.find(u => u.id === userId);
             if (!user) return;
-
+            
             updateStatus(`Deixando de seguir ${user.username}...`, 'loading');
             try {
                 const response = await chrome.runtime.sendMessage({ action: 'unfollowUser', payload: { userId: user.id } });
@@ -328,11 +353,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStatus(error.message, 'error');
             }
         }
-
+        
         await saveState();
         renderAllLists();
     });
-
+    
     searchInput.addEventListener('input', (e) => {
         state.currentFilter = e.target.value.toLowerCase();
         renderAllLists();
@@ -340,7 +365,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     tabLinks.forEach(link => {
         link.addEventListener('click', () => {
-            if (isUnfollowing) return;
             const tabId = link.dataset.tab;
             tabLinks.forEach(l => l.classList.remove('active'));
             tabContents.forEach(c => c.classList.remove('active'));
